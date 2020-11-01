@@ -18,9 +18,7 @@ if last_page:
     y = last_page
     x = int(x)
     y = int(y)
-
-
-##############
+###
 def parse_price(price):
     return float(price.replace(' ', '').replace('zł', '').replace(',', '.'))
 
@@ -34,20 +32,14 @@ def parse_page(number):
         location = footer.find('small', class_='breadcrumb').get_text().strip().split(',')[0]
         title = offer.find('strong').get_text().strip()
         price = parse_price(offer.find('p', class_='price').get_text().strip())
-        soup.prettify()
-        link = offer.find('a', href=True)
-        if link is not None:
-            print (link.get('href'))
+        link = offer.find('a').get('href').strip()
         cursor.execute('INSERT INTO offers VALUES (?, ?, ?, ?)', (title, price, location, link))
-
     db.commit()
-
-
 
 db = sqlite3.connect('dane.db')
 cursor = db.cursor()
 print('Połączono z SQLite')
-cursor.execute('''CREATE TABLE IF NOT EXISTS offers (name TEXT, price REAL, city TEXT, link TEXT)''')
+cursor.execute('''CREATE TABLE IF NOT EXISTS offers (name TEXT, price REAL, city TEXT, link boolean)''')
 
 for page in range(x, y):
     parse_page(page)
