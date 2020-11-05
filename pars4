@@ -54,22 +54,26 @@ cursor = db.cursor()
 print('Połączono z SQLite')
 t = ('%olx%',)
 cursor.execute('SELECT link FROM offers WHERE link LIKE ? ', t)
-tups = cursor.fetchall()
+tups = [i[0] for i in cursor.fetchall()]
+print([i for i in cursor.fetchall()])
 last_tup = (len(tups))
 def parse_subpage(number):
     print(f'Pracuje nad linkiem {number}.')
     for tup in tups:
-        
-        subpage = get(tup).get_text()
+        subpage = get(tup)
         bs = BeautifulSoup(subpage.content, 'html.parser')
         suboffer: object
     for suboffer in bs.find('li', class_='offer-details__item'):
-        details = suboffer.find('strong').get_text().strip()
-
-        cursor.execute('''ALTER TABLE offers ADD details TEXT''')
-        cursor.execute('UPDATE offers SET details = ?', (details,))
+        details = suboffer.find('strong')
+        cursor.execute('''UPDATE offers SET details = ?''', (details,))
 
     db.commit()
+
+db = sqlite3.connect('dane.db')
+cursor = db.cursor()
+print('Połączono z SQLite')
+cursor.execute('''ALTER TABLE offers ADD details TEXT''')
+
 for subpage in range(1, last_tup):
     parse_subpage(subpage)
 db.close()
