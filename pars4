@@ -55,17 +55,18 @@ print('Połączono z SQLite')
 t = ('%olx%',)
 cursor.execute('SELECT link FROM offers WHERE link LIKE ? ', t)
 tups = [i[0] for i in cursor.fetchall()]
-print([i for i in cursor.fetchall()])
+print(tups)
 last_tup = (len(tups))
 def parse_subpage(number):
     print(f'Pracuje nad linkiem {number}.')
     for tup in tups:
-        subpage = get(tup)
+        subpage = get(tup)[0]
+        print (subpage)
         bs = BeautifulSoup(subpage.content, 'html.parser')
         suboffer: object
-    for suboffer in bs.find('li', class_='offer-details__item'):
-        details = suboffer.find('strong')
-        cursor.execute('''UPDATE offers SET details = ?''', (details,))
+        for suboffer in bs.find('li', class_='offer-details__item'):
+            details = suboffer.find('strong')
+            cursor.execute('''UPDATE offers SET details = ?''', (details,))
 
     db.commit()
 
