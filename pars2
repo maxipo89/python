@@ -50,7 +50,7 @@ db = sqlite3.connect('dane.db')
 cursor = db.cursor()
 print('Połączono z SQLite')
 t = ('%olx%',)
-cursor.execute('SELECT * FROM offers WHERE link LIKE ? LIMIT 1', t)
+cursor.execute('SELECT link FROM offers WHERE link LIKE ? LIMIT 1', t)
 print(cursor.fetchone())
 
 row = cursor.fetchone()
@@ -58,12 +58,11 @@ row = cursor.fetchone()
 def parse_subpage():
     #print(f'Pracuje nad linkiem {link}.')
     subpage = {row}
+    print(subpage)
     bs = BeautifulSoup(subpage.content, 'html.parser')
-    print(bs)
     suboffer: object
     for suboffer in bs.find('span', class_='offer-details__name'):
         details = suboffer.find('strong', class_= 'class="offer-details__name').get_text().strip()
-        print(details)
         alterStatement = ('ALTER TABLE dane.offers ADD COLUMN details TEXT')
         cursor.execute(alterStatement)
         cursor.execute('INSERT INTO offers (details) VALUES (?)', (details))
@@ -71,10 +70,10 @@ def parse_subpage():
         cursor.execute(descibeStatement)
 
 
-        print(suboffer)
+
         db.commit()
 
 
 for subpage in range(1, 1):
         parse_subpage(subpage)
-
+db.close()
