@@ -5,20 +5,18 @@ import sqlite3
 import re
 
 headers = {'User-Agent': 'Mozilla/5.0'}
-URL = 'https://www.olx.pl/nieruchomosci/mieszkania/sprzedaz/mazowieckie/?search%5Bfilter_enum_rooms%5D%5B0%5D=two'
+URL = 'https://www.olx.pl/nieruchomosci/mieszkania/sprzedaz/lodzkie/?search%5Bfilter_enum_rooms%5D%5B0%5D=three'
 response = requests.get(f'{URL}', headers=headers)
-
 soup = BeautifulSoup(response.text, 'lxml')
 
-for last_page in soup.findAll('a', attrs={'href': re.compile("^https://")},
-                              class_='block br3 brc8 large tdnone lheight24'): pass
+for last_page in soup.findAll('a', attrs={'href': re.compile("^https://")}, class_='block br3 brc8 large tdnone lheight24'): pass
+
 if last_page:
     last_page = last_page.getText().strip()
-    x = 1
-    y = last_page
-    x = int(x)
-    y = int(y)
-###
+    x = int(1)
+    y = int(last_page)
+
+#############################################################################
 def parse_price(price):
     return float(price.replace(' ', '').replace('zł', '').replace(',', '.'))
 
@@ -26,22 +24,41 @@ def parse_page(number):
     print(f'Pracuje nad stroną numer {number}.')
     page = get(f'{URL}&page={number}')
     bs = BeautifulSoup(page.content, 'html.parser')
-    offer: object
     for offer in bs.find_all('div', class_='offer-wrapper'):
         footer = offer.find('td', class_='bottom-cell')
         location = footer.find('small', class_='breadcrumb').get_text().strip().split(',')[0]
         title = offer.find('strong').get_text().strip()
         price = parse_price(offer.find('p', class_='price').get_text().strip())
         link = offer.find('a').get('href').strip()
-        cursor.execute('INSERT INTO offers VALUES (?, ?, ?, ?)', (title, price, location, link))
+        subpage = get(link)
+        if 'otodom' in link:
+            bs = BeautifulSoup(subpage.content, 'html.parser')
+            for suboffer1 in bs.find_all('div', class_='css-dwmx8v-Fe'):
+                suboffer1 = suboffer1.find('ul').get_text().strip()
+                opis1 = bs.find('p').get_text()
+                print(opis1)
+            cursor.execute('INSERT INTO offers_otodom VALUES (?, ?, ?, ?, ?, ?)', (title, price, location, link, suboffer1, opis1))
+        else:
+            bs = BeautifulSoup(subpage.content, 'html.parser')
+            for suboffer in bs.find_all('ul', class_='offer-details'):
+                opis = bs.find('div', class_='clr lheight20 large').get_text().strip()
+                suboffer = suboffer.text.replace('\n', ' ')
+            cursor.execute('INSERT INTO offers_olx VALUES (?, ?, ?, ?, ?, ? )', (title, price, location, link, suboffer, opis))
     db.commit()
+
 
 db = sqlite3.connect('dane.db')
 cursor = db.cursor()
 print('Połączono z SQLite')
-cursor.execute('''CREATE TABLE IF NOT EXISTS offers (name TEXT, price REAL, city TEXT, link boolean)''')
+cursor.execute('''CREATE TABLE IF NOT EXISTS offers_olx (name TEXT, price REAL, city TEXT, link TEXT, details TEXT, opis TEXT)''')
+
+db = sqlite3.connect('dane.db')
+cursor = db.cursor()
+print('Połączono z SQLite')
+cursor.execute('''CREATE TABLE IF NOT EXISTS offers_otodom (name TEXT, price REAL, city TEXT, link TEXT, details TEXT, opis TEXT)''')
 
 for page in range(x, y):
     parse_page(page)
 
 db.close()
+
