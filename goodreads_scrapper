@@ -13,26 +13,28 @@ if last_page:
     last_page = last_page.getText().strip()
     print (last_page)
 
-start = int(1)
+start = int(0)
 end = int(last_page)
+print(last_page)
 
 def parse_page(number):
     print(f'Pracuje nad stroną numer {number}.')
     page = get(f'{URL}?page={number}')
     bs = BeautifulSoup(page.content, 'html.parser')
-    lis = []
+    #lis = []
     for quotes in bs.find_all('div', class_='quote'):
+        print()
         quote = quotes.find('div', class_='quoteText').get_text().strip()
         quote = re.sub("  +", "", quote.replace("\n", ""))
         sign = int(re.search("―", quote).start())
         quote=quote[1:sign-1]
 
+        #lis.append(quote)
 
-        with open('quotes.csv', 'w', newline='', encoding="utf-8") as file:
-            lis.append(quote)
-            spamwriter = csv.writer(file)
-            for l in lis:
-                spamwriter.writerow([l])
+        with open('quotes.csv', 'a', newline='', encoding="utf-8") as file:
+            writer=csv.writer(file)
+            writer.writerow([quote])
+
 for page in range(start, end):
     parse_page(page)
 
