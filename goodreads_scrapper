@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 from requests import get
 import re
 import csv
+from google_trans_new import google_translator
 headers = {'User-Agent': 'Mozilla/5.0'}
 URL = 'https://www.goodreads.com/author/quotes/1455.Ernest_Hemingway'
 response = requests.get(f'{URL}', headers=headers)
@@ -13,9 +14,9 @@ if last_page:
     last_page = last_page.getText().strip()
     print (last_page)
 
-start = int(0)
+start = int(1)
 end = int(last_page)
-print(last_page)
+
 
 def parse_page(number):
     print(f'Pracuje nad stroną numer {number}.')
@@ -23,13 +24,19 @@ def parse_page(number):
     bs = BeautifulSoup(page.content, 'html.parser')
     #lis = []
     for quotes in bs.find_all('div', class_='quote'):
-        print()
+
         quote = quotes.find('div', class_='quoteText').get_text().strip()
         quote = re.sub("  +", "", quote.replace("\n", ""))
         sign = int(re.search("―", quote).start())
+        #print (sign)
         quote=quote[1:sign-1]
 
-        #lis.append(quote)
+        translator = google_translator()
+        translations = translator.translate([quote], lang_tgt='pl')
+
+        quote= f'{quote} {translations}'
+        print(quote)
+
 
         with open('quotes.csv', 'a', newline='', encoding="utf-8") as file:
             writer=csv.writer(file)
@@ -37,4 +44,3 @@ def parse_page(number):
 
 for page in range(start, end):
     parse_page(page)
-
