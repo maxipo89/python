@@ -25,12 +25,14 @@ def parse_page(number):
         quote = quotes.find('div', class_='quoteText').get_text().strip()
         quote = re.sub("  +", "", quote.replace("\n", ""))
         sign = int(re.search("―", quote).start())
-        quote=quote[1:sign-6]
-        print(quote)
+        quote=quote[1:sign-1]
+
 
         with open('quotes.csv', 'w', newline='', encoding="utf-8") as file:
             lis.append(quote)
-            writer = csv.writer(file)
-            writer.writerows(lis)
+            spamwriter = csv.writer(file)
+            for l in lis:
+                spamwriter.writerow([l])
 for page in range(start, end):
     parse_page(page)
+
