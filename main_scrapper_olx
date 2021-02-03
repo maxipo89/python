@@ -9,19 +9,16 @@ URL = 'https://www.olx.pl/nieruchomosci/mieszkania/sprzedaz/lodzkie/?search%5Bfi
 response = requests.get(f'{URL}', headers=headers)
 soup = BeautifulSoup(response.text, 'lxml')
 
-for last_page in soup.findAll('a', attrs={'href': re.compile("^https://")},
-                              class_='block br3 brc8 large tdnone lheight24'): pass
+for last_page in soup.findAll('a', attrs={'href': re.compile("^https://")}, class_='block br3 brc8 large tdnone lheight24'): pass
 
 if last_page:
     last_page = last_page.getText().strip()
     x = int(1)
     y = int(last_page)
 
-
 #############################################################################
 def parse_price(price):
     return float(price.replace(' ', '').replace('zł', '').replace(',', '.'))
-
 
 def parse_page(number):
     print(f'Pracuje nad stroną numer {number}.')
@@ -37,8 +34,10 @@ def parse_page(number):
         if 'otodom' in link:
             bs = BeautifulSoup(subpage.content, 'html.parser')
             for suboffer1 in bs.find_all('div', class_='css-dwmx8v-Fe'):
-                suboffer1 = suboffer1.find('ul').get_text().strip().split()
 
+                suboffer1 = suboffer1.find('ul').get_text().strip()
+                #suboffer1 = suboffer1.text.replace('\n', ' ')
+                print(suboffer1)
                 for opis1 in bs.find_all('p'):
                     opis1 = opis1.get_text()
 
@@ -46,64 +45,61 @@ def parse_page(number):
                         print('brak opisu')
                     else:
                         opis1 = opis1
-                        # print(opis1)
+                        #print(opis1)
 
-            cursor.execute('INSERT INTO offers_otodom VALUES (?, ?, ?, ?, ?, ?)',
-                           (title, price, location, link, suboffer1, opis1))
+
+
+                cursor.execute('INSERT INTO offers_otodom VALUES (?, ?, ?, ?, ?, ?)', (title, price, location, link, suboffer1, opis1))
         else:
             bs = BeautifulSoup(subpage.content, 'html.parser')
             for suboffer in bs.find_all('ul', class_='offer-details'):
                 opis = bs.find('div', class_='clr lheight20 large').get_text().strip()
-                suboffer = suboffer.text.replace('\n', ' ')  # .split()
-                lis = []
-                for strong in bs.find_all('strong', class_='offer-details__value'):
-                    tekst = strong.get_text()
+                suboffer = suboffer.text.replace('\n', ' ')#.split()
+                '''lis=[]
+                for strong in suboffer.find_all('strong', class_= 'offer-details__value'):
+                    tekst=strong.get_text()
                     if 'Oblicz ratę dla tego mieszkania' in tekst:
                         break
                     else:
                         lis.append(tekst)
 
-                keys = ['Odkogo', 'Cenaza1m', 'Piętro', 'Umbelowane', 'Rynek', 'Rodzajzabudowy', 'Powierchnia',
-                        'Liczbapokoi']
+
+
+                keys = ['Odkogo','Cenaza1m','Piętro','Umbelowane','Rynek','Rodzajzabudowy','Powierchnia','Liczbapokoi']
                 values = lis
                 dictionary = dict(zip(keys, values))
-                #print(dictionary)
+                print(dictionary)
+
+                     #odkogo=strong
+                #for strong in suboffer.find_all('strong', class_= 'offer-details__value'):
+                    #print(strong)
+                 #   odkogo=strong.get_text()
+                    #print(odkogo)
+                    #strong= strong.text.replace('\n', ' ')#.split()
 
                 columns = ', '.join(dictionary.keys())
-                placeholders = ', '.join(dictionary.values())
+                placeholders = ':'+', :'.join(dictionary.keys())
 
-                for key in dictionary:
-                    x = dictionary[key]
-                    #print(key, x)
-                    print(key)
-                    #print(x)
-                print(columns)
-                print(placeholders)
+'''
 
-            cursor.execute('INSERT INTO offers_olx VALUES (?, ?, ?, ?, ?, ?)',
-                           (title, price, location, link, suboffer, opis))
-            for keys in dictionary:
-                #cursor.execute(f'UPDATE offers_olx SET {key} = %s', x)
-                print('UPDATE offers_olx SET %s = %s',(key, x))
-            #cur.execute('UPDATE "{}" SET Times=? WHERE Name=?'.format(group.replace('"', '""')),
-            #            (times_before + 1, food))
+
+                #print(suboffer)
+            cursor.execute('INSERT INTO offers_olx VALUES (?, ?, ?, ?, ?, ?)', (title, price, location, link, suboffer, opis))
+
             db.commit()
 
 
 db = sqlite3.connect('dane.db')
 cursor = db.cursor()
 print('Połączono z SQLite')
-cursor.execute(
-    '''CREATE TABLE IF NOT EXISTS offers_olx (advertisement TEXT, price REAL, city TEXT, link TEXT, details TEXT, opis TEXT)''')
+cursor.execute('''CREATE TABLE IF NOT EXISTS offers_olx (advertisement TEXT, price REAL, city TEXT, link TEXT, details TEXT, opis TEXT)''')
 
 db = sqlite3.connect('dane.db')
 cursor = db.cursor()
 print('Połączono z SQLite')
-cursor.execute(
-    '''CREATE TABLE IF NOT EXISTS offers_otodom (name TEXT, price REAL, city TEXT, link TEXT, details TEXT, opis TEXT)''')
+cursor.execute('''CREATE TABLE IF NOT EXISTS offers_otodom (name TEXT, price REAL, city TEXT, link TEXT, details TEXT, opis TEXT)''')
 
 for page in range(4, 5):
     parse_page(page)
 
 db.close()
-
